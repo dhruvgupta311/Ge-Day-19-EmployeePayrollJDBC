@@ -1,5 +1,6 @@
 import java.sql.*;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PayrollDBService {
 
@@ -13,6 +14,7 @@ public class PayrollDBService {
     private PreparedStatement selectEmployeeStmt;
     private PreparedStatement insertEmployeeStmt;
     private PreparedStatement updateEmployeeStmt;
+    private PreparedStatement selectEmployeesByDateRangeStmt;
 
     // Private constructor for Singleton
     private PayrollDBService() throws SQLException {
@@ -25,6 +27,7 @@ public class PayrollDBService {
         selectEmployeeStmt = con.prepareStatement("SELECT * FROM employee_payroll19 WHERE name = ?");
         insertEmployeeStmt = con.prepareStatement("INSERT INTO employee_payroll19 (name, salary, basic_pay, deductions, taxable_pay, income_tax, net_pay, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         updateEmployeeStmt = con.prepareStatement("UPDATE employee_payroll19 SET salary = ?, basic_pay = ? WHERE name = ?");
+        selectEmployeesByDateRangeStmt = con.prepareStatement("SELECT * FROM employee_payroll19 WHERE start_date BETWEEN ? AND ?");
     }
 
     // Singleton pattern to get the instance
@@ -73,5 +76,27 @@ public class PayrollDBService {
             );
         }
         return null;
+    }
+
+    // Retrieve all employees who joined between a specific date range
+    public List<EmployeePayroll> getEmployeesByDateRange(Date startDate, Date endDate) throws SQLException {
+        List<EmployeePayroll> employees = new ArrayList<>();
+        selectEmployeesByDateRangeStmt.setDate(1, new java.sql.Date(startDate.getTime()));
+        selectEmployeesByDateRangeStmt.setDate(2, new java.sql.Date(endDate.getTime()));
+
+        ResultSet rs = selectEmployeesByDateRangeStmt.executeQuery();
+        while (rs.next()) {
+            employees.add(new EmployeePayroll(
+                    rs.getString("name"),
+                    rs.getDouble("salary"),
+                    rs.getDouble("basic_pay"),
+                    rs.getDouble("deductions"),
+                    rs.getDouble("taxable_pay"),
+                    rs.getDouble("income_tax"),
+                    rs.getDouble("net_pay"),
+                    rs.getDate("start_date")
+            ));
+        }
+        return employees;
     }
 }

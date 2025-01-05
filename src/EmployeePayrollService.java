@@ -1,28 +1,33 @@
 import java.sql.*;
 import java.util.Date;
+import java.util.List;
 
 public class EmployeePayrollService {
 
     public static void main(String[] args) {
-        EmployeePayroll employee = new EmployeePayroll("Terisa", 2500000.00, 2000000.00, 40000.00,
-                1960000.00, 39200.00, 1920800.00, new Date());
-
         try {
             // Get the singleton instance of the Payroll DB Service
             PayrollDBService payrollDBService = PayrollDBService.getInstance();
 
-            // Insert employee payroll into the database
-            payrollDBService.insertEmployeePayroll(employee);
+            java.util.Date startDateUtil = new java.util.Date();
+            java.util.Date endDateUtil = new java.util.Date();
 
-            // Update the salary of Terisa and sync it with the database
-            payrollDBService.updateEmployeeSalary(employee, 3000000.00);
+            // Convert java.util.Date to java.sql.Date
+            java.sql.Date startDate = new java.sql.Date(startDateUtil.getTime());
+            java.sql.Date endDate = new java.sql.Date(endDateUtil.getTime());
 
-            // Verify the update by comparing EmployeePayroll object with DB
-            EmployeePayroll updatedEmployee = payrollDBService.getEmployeePayrollByName(employee.getName());
-            if (updatedEmployee != null && updatedEmployee.getSalary() == 3000000.00) {
-                System.out.println("Salary updated successfully!");
+            // Get employees by date range
+            List<EmployeePayroll> employees = payrollDBService.getEmployeesByDateRange(startDate, endDate);
+
+            // Display the retrieved employees
+            if (employees.isEmpty()) {
+                System.out.println("No employees found for the given date range.");
             } else {
-                System.out.println("Error: Employee not found or salary update failed for " + employee.getName());
+                System.out.println("Employees who joined between " + startDate + " and " + endDate + ":");
+                for (EmployeePayroll employee : employees) {
+                    System.out.println("Name: " + employee.getName() + ", Salary: " + employee.getSalary() +
+                            ", Start Date: " + employee.getStartDate());
+                }
             }
 
         } catch (SQLException e) {
