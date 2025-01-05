@@ -1,3 +1,5 @@
+import java.util.Date;
+
 public class EmployeePayroll {
     private int payrollId;
     private String name;
@@ -7,12 +9,11 @@ public class EmployeePayroll {
     private double taxablePay;
     private double incomeTax;
     private double netPay;
-    private String startDate; // New field for backward compatibility
+    private Date startDate;
 
     // Constructor
-    public EmployeePayroll(int payrollId, String name, double salary, double basicPay, double deductions,
-                           double taxablePay, double incomeTax, double netPay, String startDate) {
-        this.payrollId = payrollId;
+    public EmployeePayroll(String name, double salary, double basicPay, double deductions,
+                           double taxablePay, double incomeTax, double netPay, Date startDate) {
         this.name = name;
         this.salary = salary;
         this.basicPay = basicPay;
@@ -23,7 +24,7 @@ public class EmployeePayroll {
         this.startDate = startDate;
     }
 
-    // Getters and Setters
+    // Getters and setters
     public int getPayrollId() {
         return payrollId;
     }
@@ -88,11 +89,11 @@ public class EmployeePayroll {
         this.netPay = netPay;
     }
 
-    public String getStartDate() {
+    public Date getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(String startDate) {
+    public void setStartDate(Date startDate) {
         this.startDate = startDate;
     }
 }
