@@ -15,38 +15,51 @@ public class EmployeePayrollService {
         }
 
         try {
-            List<EmployeePayroll> payrollList = retrievePayrollData();
-            payrollList.forEach(System.out::println);
-        } catch (PayrollException e) {
+            List<EmployeePayroll> payrollList = getEmployeePayrollData();
+            for (EmployeePayroll payroll : payrollList) {
+                System.out.println("Payroll ID: " + payroll.getPayrollId());
+                System.out.println("Name: " + payroll.getName());
+                System.out.println("Salary: " + payroll.getSalary());
+                System.out.println("Basic Pay: " + payroll.getBasicPay());
+                System.out.println("Deductions: " + payroll.getDeductions());
+                System.out.println("Taxable Pay: " + payroll.getTaxablePay());
+                System.out.println("Income Tax: " + payroll.getIncomeTax());
+                System.out.println("Net Pay: " + payroll.getNetPay());
+                System.out.println("Start Date: " + payroll.getStartDate());
+                System.out.println("==========");
+            }
+        } catch (SQLException | CustomException e) {
             System.err.println("Error: " + e.getMessage());
         }
     }
 
-    public static List<EmployeePayroll> retrievePayrollData() throws PayrollException {
+    // Method to retrieve employee payroll data
+    public static List<EmployeePayroll> getEmployeePayrollData() throws SQLException, CustomException {
         List<EmployeePayroll> payrollList = new ArrayList<>();
+        String query = "SELECT payroll_id, name, salary, basic_pay, deductions, taxable_pay, income_tax, net_pay, start_date FROM employee_payroll19";
 
-        try (Connection connection = DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(
-                     "SELECT payroll_id, employee_id, salary, basic_pay, deductions, taxable_pay, income_tax, net_pay FROM payroll")) {
+        try (Connection con = DriverManager.getConnection(JDBC_URL, USER, PASSWORD);
+             PreparedStatement stmt = con.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
 
-            while (resultSet.next()) {
-                int payrollId = resultSet.getInt("payroll_id");
-                int employeeId = resultSet.getInt("employee_id");
-                double salary = resultSet.getDouble("salary");
-                double basicPay = resultSet.getDouble("basic_pay");
-                double deductions = resultSet.getDouble("deductions");
-                double taxablePay = resultSet.getDouble("taxable_pay");
-                double incomeTax = resultSet.getDouble("income_tax");
-                double netPay = resultSet.getDouble("net_pay");
+            while (rs.next()) {
+                int payrollId = rs.getInt("payroll_id");
+                String name = rs.getString("name");
+                double salary = rs.getDouble("salary");
+                double basicPay = rs.getDouble("basic_pay");
+                double deductions = rs.getDouble("deductions");
+                double taxablePay = rs.getDouble("taxable_pay");
+                double incomeTax = rs.getDouble("income_tax");
+                double netPay = rs.getDouble("net_pay");
+                String startDate = rs.getString("start_date");
 
-                EmployeePayroll payroll = new EmployeePayroll(
-                        payrollId, employeeId, salary, basicPay, deductions, taxablePay, incomeTax, netPay);
+                // Populate EmployeePayroll object
+                EmployeePayroll payroll = new EmployeePayroll(payrollId, name, salary, basicPay, deductions, taxablePay, incomeTax, netPay, startDate);
                 payrollList.add(payroll);
             }
 
         } catch (SQLException e) {
-            throw new PayrollException("Failed to retrieve payroll data: " + e.getMessage());
+            throw new CustomException("Error retrieving payroll data: " + e.getMessage());
         }
 
         return payrollList;
