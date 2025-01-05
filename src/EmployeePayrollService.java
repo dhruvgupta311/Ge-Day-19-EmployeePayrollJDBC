@@ -1,37 +1,37 @@
 import java.sql.*;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class EmployeePayrollService {
 
     public static void main(String[] args) {
         try {
-            // Get the singleton instance of the Payroll DB Service
+            // Get the singleton instance of PayrollDBService
             PayrollDBService payrollDBService = PayrollDBService.getInstance();
 
-            java.util.Date startDateUtil = new java.util.Date();
-            java.util.Date endDateUtil = new java.util.Date();
+            // Get the aggregate analysis for male and female employees
+            AggregateResult maleResults = payrollDBService.getGenderBasedAggregates('M');
+            AggregateResult femaleResults = payrollDBService.getGenderBasedAggregates('F');
 
-            // Convert java.util.Date to java.sql.Date
-            java.sql.Date startDate = new java.sql.Date(startDateUtil.getTime());
-            java.sql.Date endDate = new java.sql.Date(endDateUtil.getTime());
+            // Display the results for male employees
+            System.out.println("Male Employee Salary Analysis:");
+            displayAggregateResults(maleResults);
 
-            // Get employees by date range
-            List<EmployeePayroll> employees = payrollDBService.getEmployeesByDateRange(startDate, endDate);
-
-            // Display the retrieved employees
-            if (employees.isEmpty()) {
-                System.out.println("No employees found for the given date range.");
-            } else {
-                System.out.println("Employees who joined between " + startDate + " and " + endDate + ":");
-                for (EmployeePayroll employee : employees) {
-                    System.out.println("Name: " + employee.getName() + ", Salary: " + employee.getSalary() +
-                            ", Start Date: " + employee.getStartDate());
-                }
-            }
+            // Display the results for female employees
+            System.out.println("Female Employee Salary Analysis:");
+            displayAggregateResults(femaleResults);
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // Method to display the aggregate results
+    private static void displayAggregateResults(AggregateResult result) {
+        System.out.println("Sum of Salaries: " + result.getSumSalary());
+        System.out.println("Average Salary: " + result.getAverageSalary());
+        System.out.println("Minimum Salary: " + result.getMinSalary());
+        System.out.println("Maximum Salary: " + result.getMaxSalary());
+        System.out.println("Number of Employees: " + result.getEmployeeCount());
+        System.out.println();
     }
 }

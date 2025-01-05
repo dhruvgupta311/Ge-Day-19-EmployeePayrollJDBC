@@ -1,102 +1,50 @@
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class PayrollDBService {
 
-    private static PayrollDBService instance;
+    private static PayrollDBService payrollDBService;
     private static final String JDBC_URL = "jdbc:mysql://localhost:3306/payroll_service?useSSL=false";
     private static final String USER_NAME = "root";
     private static final String PASSWORD = System.getenv("MY_APP_PASSWORD");
-    private static Connection con;
 
-    // PreparedStatement cached at the class level for reuse
-    private PreparedStatement selectEmployeeStmt;
-    private PreparedStatement insertEmployeeStmt;
-    private PreparedStatement updateEmployeeStmt;
-    private PreparedStatement selectEmployeesByDateRangeStmt;
+    private PayrollDBService() {}
 
-    // Private constructor for Singleton
-    private PayrollDBService() throws SQLException {
-        if (PASSWORD == null) {
-            throw new SQLException("Error: MY_APP_PASSWORD environment variable is not set.");
+    // Singleton method to get the instance of PayrollDBService
+    public static PayrollDBService getInstance() {
+        if (payrollDBService == null) {
+            payrollDBService = new PayrollDBService();
+        }
+        return payrollDBService;
+    }
+
+    // Method to get aggregate salary data for male or female employees
+    public AggregateResult getGenderBasedAggregates(char gender) throws SQLException {
+        AggregateResult result = null;
+        String query = "SELECT SUM(salary) AS sum_salary, AVG(salary) AS avg_salary, " +
+                "MIN(salary) AS min_salary, MAX(salary) AS max_salary, COUNT(*) AS employee_count " +
+                "FROM employee_payroll19 WHERE gender = ? GROUP BY gender";
+
+        try (Connection con = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
+             PreparedStatement ps = con.prepareStatement(query)) {
+            ps.setString(1, String.valueOf(gender));
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                double sumSalary = rs.getDouble("sum_salary");
+                double avgSalary = rs.getDouble("avg_salary");
+                double minSalary = rs.getDouble("min_salary");
+                double maxSalary = rs.getDouble("max_salary");
+                int employeeCount = rs.getInt("employee_count");
+
+                result = new AggregateResult(sumSalary, avgSalary, minSalary, maxSalary, employeeCount);
+            }
         }
 
-        con = DriverManager.getConnection(JDBC_URL, USER_NAME, PASSWORD);
-        // Prepare the SQL statements and cache them
-        selectEmployeeStmt = con.prepareStatement("SELECT * FROM employee_payroll19 WHERE name = ?");
-        insertEmployeeStmt = con.prepareStatement("INSERT INTO employee_payroll19 (name, salary, basic_pay, deductions, taxable_pay, income_tax, net_pay, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        updateEmployeeStmt = con.prepareStatement("UPDATE employee_payroll19 SET salary = ?, basic_pay = ? WHERE name = ?");
-        selectEmployeesByDateRangeStmt = con.prepareStatement("SELECT * FROM employee_payroll19 WHERE start_date BETWEEN ? AND ?");
-    }
-
-    // Singleton pattern to get the instance
-    public static PayrollDBService getInstance() throws SQLException {
-        if (instance == null) {
-            instance = new PayrollDBService();
+        if (result == null) {
+            throw new SQLException("No data found for gender: " + gender);
         }
-        return instance;
-    }
 
-    // Insert employee payroll into the database
-    public void insertEmployeePayroll(EmployeePayroll employee) throws SQLException {
-        insertEmployeeStmt.setString(1, employee.getName());
-        insertEmployeeStmt.setDouble(2, employee.getSalary());
-        insertEmployeeStmt.setDouble(3, employee.getBasicPay());
-        insertEmployeeStmt.setDouble(4, employee.getDeductions());
-        insertEmployeeStmt.setDouble(5, employee.getTaxablePay());
-        insertEmployeeStmt.setDouble(6, employee.getIncomeTax());
-        insertEmployeeStmt.setDouble(7, employee.getNetPay());
-        insertEmployeeStmt.setDate(8, new java.sql.Date(employee.getStartDate().getTime()));
-        insertEmployeeStmt.executeUpdate();
-    }
-
-    // Update the salary of an employee
-    public void updateEmployeeSalary(EmployeePayroll employee, double newSalary) throws SQLException {
-        updateEmployeeStmt.setDouble(1, newSalary);
-        updateEmployeeStmt.setDouble(2, newSalary - 50000.00);  // Assuming basic pay is 50,000 less than salary
-        updateEmployeeStmt.setString(3, employee.getName());
-        updateEmployeeStmt.executeUpdate();
-    }
-
-    // Get Employee Payroll by Name and populate EmployeePayroll object
-    public EmployeePayroll getEmployeePayrollByName(String name) throws SQLException {
-        selectEmployeeStmt.setString(1, name);
-        ResultSet rs = selectEmployeeStmt.executeQuery();
-        if (rs.next()) {
-            return new EmployeePayroll(
-                    rs.getString("name"),
-                    rs.getDouble("salary"),
-                    rs.getDouble("basic_pay"),
-                    rs.getDouble("deductions"),
-                    rs.getDouble("taxable_pay"),
-                    rs.getDouble("income_tax"),
-                    rs.getDouble("net_pay"),
-                    rs.getDate("start_date")
-            );
-        }
-        return null;
-    }
-
-    // Retrieve all employees who joined between a specific date range
-    public List<EmployeePayroll> getEmployeesByDateRange(Date startDate, Date endDate) throws SQLException {
-        List<EmployeePayroll> employees = new ArrayList<>();
-        selectEmployeesByDateRangeStmt.setDate(1, new java.sql.Date(startDate.getTime()));
-        selectEmployeesByDateRangeStmt.setDate(2, new java.sql.Date(endDate.getTime()));
-
-        ResultSet rs = selectEmployeesByDateRangeStmt.executeQuery();
-        while (rs.next()) {
-            employees.add(new EmployeePayroll(
-                    rs.getString("name"),
-                    rs.getDouble("salary"),
-                    rs.getDouble("basic_pay"),
-                    rs.getDouble("deductions"),
-                    rs.getDouble("taxable_pay"),
-                    rs.getDouble("income_tax"),
-                    rs.getDouble("net_pay"),
-                    rs.getDate("start_date")
-            ));
-        }
-        return employees;
+        return result;
     }
 }
